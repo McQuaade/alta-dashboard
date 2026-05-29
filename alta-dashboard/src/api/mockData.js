@@ -1,11 +1,11 @@
 const PROXY = import.meta.env.VITE_PROXY_URL || 'https://alta-proxy.onrender.com'
-
+ 
 async function get(path) {
   const res = await fetch(`${PROXY}${path}`)
   if (!res.ok) throw new Error(`API fejl: ${res.status}`)
   return res.json()
 }
-
+ 
 export async function fetchCameras() {
   try {
     const data = await get('/api/cameras')
@@ -27,7 +27,7 @@ export async function fetchCameras() {
     return generateCameras()
   }
 }
-
+ 
 export async function fetchAlarms() {
   try {
     const data = await get('/api/alarms')
@@ -46,52 +46,83 @@ export async function fetchAlarms() {
     return generateAlarms()
   }
 }
-
+ 
 export function generateHourlyTraffic() {
   const hours = []
   for (let h = 0; h < 24; h++) {
     const base = h >= 7 && h <= 19 ? Math.floor(Math.random() * 90 + 30) : Math.floor(Math.random() * 15)
-    hours.push({ hour: `${String(h).padStart(2,'0')}:00`, ind: base, ud: Math.floor(base * 0.8) })
+    hours.push({ hour: `${String(h).padStart(2, '0')}:00`, ind: base, ud: Math.floor(base * 0.8) })
   }
   return hours
 }
-
+ 
 export function generateWeeklyAlarms() {
-  return ['Man','Tir','Ons','Tor','Fre','Lør','Søn'].map(day => ({
-    day, critical: Math.floor(Math.random()*5), high: Math.floor(Math.random()*15), medium: Math.floor(Math.random()*30), low: Math.floor(Math.random()*40)
+  return ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'].map(day => ({
+    day,
+    critical: Math.floor(Math.random() * 5),
+    high: Math.floor(Math.random() * 15),
+    medium: Math.floor(Math.random() * 30),
+    low: Math.floor(Math.random() * 40),
   }))
 }
-
+ 
 export function generateLPRData() {
-  return ['AB12345','CD67890','EF11223','GH44556','IJ77889','KL00112','MN33445'].map((plate,i) => ({
-    plate, count: Math.floor(Math.random()*45+1), lastSeen: 'Indgang A', known: i%3!==0, risk: i===3?'high':i===5?'medium':'none'
+  const names = ['Indgang A', 'Parkering Øst', 'Serverrum', 'Reception', 'Kantine', 'Lager Zone 1', 'Udgang B']
+  return ['AB12345', 'CD67890', 'EF11223', 'GH44556', 'IJ77889', 'KL00112', 'MN33445'].map((plate, i) => ({
+    plate,
+    count: Math.floor(Math.random() * 45 + 1),
+    lastSeen: names[i % names.length],
+    known: i % 3 !== 0,
+    risk: i === 3 ? 'high' : i === 5 ? 'medium' : 'none',
   }))
 }
-
+ 
 export function generateCameras() {
-  const names = ['Indgang A','Parkering Øst','Serverrum','Reception','Kantine','Lager Zone 1','Udgang B','Elevator Lobby','Tagterrasse','Vareindlevering','Kontorgang 2','Møderum 3','Parkeringsanlæg','Indkørsel','Varehus']
-  return names.map((name,i) => ({
-    id: `cam-${i+1}`, name, site: ['Hovedkontor','Lager Nord','Butik City','Datacenter'][i%4],
+  const names = ['Indgang A', 'Parkering Øst', 'Serverrum', 'Reception', 'Kantine', 'Lager Zone 1', 'Udgang B', 'Elevator Lobby', 'Tagterrasse', 'Vareindlevering', 'Kontorgang 2', 'Møderum 3', 'Parkeringsanlæg', 'Indkørsel', 'Varehus']
+  const sites = ['Hovedkontor', 'Lager Nord', 'Butik City', 'Datacenter']
+  return names.map((name, i) => ({
+    id: `cam-${i + 1}`,
+    name,
+    site: sites[i % sites.length],
     status: i < 12 ? 'online' : i === 12 ? 'warning' : 'offline',
-    uptime: i < 12 ? 98 : 65, resolution: ['4K','1080p','4MP','8MP'][i%4],
-    recording: i !== 14, lastSeen: i < 12 ? 'Nu' : '47 min siden',
-    ip: `192.168.1.${10+i}`, analytics: i%3===0,
+    uptime: i < 12 ? 98 : 65,
+    resolution: ['4K', '1080p', '4MP', '8MP'][i % 4],
+    recording: i !== 14,
+    lastSeen: i < 12 ? 'Nu' : '47 min siden',
+    ip: `192.168.1.${10 + i}`,
+    analytics: i % 3 === 0,
   }))
 }
-
+ 
 export function generateAlarms() {
-  const types = ['Bevægelse detekteret','Linjeovergang','Uautoriseret adgang','Kamera offline','Anomali','LPR match']
-  const severities = ['critical','high','medium','low']
+  const types = ['Bevægelse detekteret', 'Linjeovergang', 'Uautoriseret adgang', 'Kamera offline', 'Anomali', 'LPR match']
+  const severities = ['critical', 'high', 'medium', 'low']
   const now = new Date()
-  return Array.from({length:48}, (_,i) => ({
-    id: `alarm-${i}`, type: types[i%types.length],
-    severity: severities[Math.floor(Math.sin(i*7)*2+2)%4],
-    camera: 'Indgang A', site: 'Hovedkontor',
-    time: new Date(now - i * 30 * 60 * 1000), acknowledged: i > 3,
+  return Array.from({ length: 48 }, (_, i) => ({
+    id: `alarm-${i}`,
+    type: types[i % types.length],
+    severity: severities[Math.abs(Math.floor(Math.sin(i * 7) * 2)) % 4],
+    camera: 'Indgang A',
+    site: 'Hovedkontor',
+    time: new Date(now - i * 30 * 60 * 1000),
+    acknowledged: i > 3,
   }))
 }
-
+ 
 export function generateSystemStats() {
   return {
-    cameras: { total:15, online:12, warning:1, offline:2 },
-    alarms: { today:23, unacknowledged:4}
+    cameras: { total: 15, online: 12, warning: 1, offline: 2 },
+    alarms: { today: 23, unacknowledged: 4, critical: 2 },
+    recording: { activeStreams: 12, storageUsed: 68, storageGB: '4.2 TB' },
+    analytics: { eventsToday: 847, anomalies: 3, lprHits: 34 },
+  }
+}
+ 
+export function generateSiteHealth() {
+  return ['Hovedkontor', 'Lager Nord', 'Butik City', 'Datacenter'].map((site, i) => ({
+    site,
+    cameras: [4, 3, 5, 3][i],
+    online: [4, 2, 5, 3][i],
+    alarms: [2, 7, 1, 0][i],
+  }))
+}
