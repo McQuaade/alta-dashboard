@@ -1,5 +1,6 @@
-import { generateSystemStats, generateAlarms, generateHourlyTraffic, generateSiteHealth } from '../api/mockData'
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
+import { useState, useEffect } from 'react'
+import { fetchCameras, fetchAlarms, generateHourlyTraffic, generateSiteHealth } from '../api/mockData'
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { format } from 'date-fns'
 import { da } from 'date-fns/locale'
 
@@ -18,12 +19,47 @@ const CustomTooltip = ({ active, payload, label }) => {
 }
 
 export default function OverviewPage() {
-  const stats = generateSystemStats()
-  const alarms = generateAlarms()
+  const [cameras, setCameras] = useState([])
+  const [alarms, setAlarms] = useState([])
+  const [loading, setLoading] = useState(true)
   const traffic = generateHourlyTraffic()
   const sites = generateSiteHealth()
-  const recent = alarms.slice(0, 8)
   const now = new Date()
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true)
+      try {
+        const [cams, alrms] = await Promise.all([fetchCameras(), fetchAlarms()])
+        setCameras(cams)
+        setAlarms(alrms)
+      } catch (e) {
+        console.error(e)
+      }
+      setLoading(false)
+    }
+    load()
+    const id = setInterval(load, 30000)
+    return () => clearInterval(id)
+  }, [])
+
+  const stats = {
+    cameras: {
+      total: cameras.length,
+      online: cameras.filter(c => c.status === 'online').length,
+      offline: cameras.filter(c => c.status === 'offline').length,
+      warning: cameras.filter(c => c.status === 'warning').length,
+    },
+    alarms: {
+      today: alarms.filter(a => new Date(a.time).toDateString() === now.toDateString()).length,
+      unacknowledged: alarms.filter(a => !a.acknowledged).length,
+      critical: alarms.filter(a => a.severity === 'critical').length,
+    },
+    recording: { activeStreams: cameras.filter(c => c.status === 'online').length, storageUsed: 68, storageGB: '—' },
+    analytics: { eventsToday: alarms.length, anomalies: alarms.filter(a => a.type?.toLowerCase().includes('anomali')).length, lprHits: alarms.filter(a => a.type?.toLowerCase().includes('lpr')).length },
+  }
+
+  const recent = alarms.slice(0, 8)
 
   return (
     <div className="page">
@@ -32,24 +68,24 @@ export default function OverviewPage() {
           <div>
             <div className="page-title">System Overblik</div>
             <div className="page-sub mono">
-              {format(now, "EEEE d. MMMM yyyy — HH:mm", { locale: da })} · Auto-refresh hvert 30s
+              {format(now, "EEEE d. MMMM yyyy — HH:mm", { locale: da })}
+              {loading ? ' · Henter data...' : ' · Auto-refresh hvert 30s'}
             </div>
           </div>
           <div className="flex-gap">
-            <span className="tag">DEMO MODE</span>
+            <span className="tag">{loading ? 'HENTER...' : 'LIVE'}</span>
             <button className="btn">Eksportér rapport</button>
           </div>
         </div>
       </div>
 
-      {/* STAT CARDS */}
       <div className="stat-grid">
         <div className="stat-card green">
           <div className="stat-label">KAMERAER ONLINE</div>
           <div className="stat-value green">{stats.cameras.online}</div>
           <div className="stat-sub">{stats.cameras.total} total · {stats.cameras.offline} offline · {stats.cameras.warning} advarsel</div>
           <div className="uptime-bar">
-            <div className="uptime-fill" style={{ width: `${stats.cameras.online / stats.cameras.total * 100}%`, background: 'var(--green)' }} />
+            <div className="uptime-fill" style={{ width: stats.cameras.total ? `${stats.cameras.online / stats.cameras.total * 100}%` : '0%', background: 'var(--green)' }} />
           </div>
         </div>
         <div className="stat-card red">
@@ -72,7 +108,6 @@ export default function OverviewPage() {
         </div>
       </div>
 
-      {/* TRAFFIC + ALARMS */}
       <div className="grid-cols-3-2">
         <div className="panel">
           <div className="panel-header">
@@ -106,9 +141,11 @@ export default function OverviewPage() {
         <div className="panel">
           <div className="panel-header">
             <span className="panel-title">Seneste alarmer</span>
-            <button className="panel-action">Vis alle</button>
+            <span className="text3 mono" style={{ fontSize: 11 }}>{alarms.length} total</span>
           </div>
           <div style={{ padding: '0 16px' }}>
+            {loading && <div style={{ padding: '20px 0', color: 'var(--text3)', fontSize: 13 }}>Henter alarmer...</div>}
+            {!loading && recent.length === 0 && <div style={{ padding: '20px 0', color: 'var(--text3)', fontSize: 13 }}>Ingen alarmer fundet</div>}
             {recent.map(a => (
               <div key={a.id} className="alarm-item">
                 <div className="alarm-severity-bar" style={{
@@ -120,57 +157,44 @@ export default function OverviewPage() {
                   <div className="alarm-type">{a.type}</div>
                   <div className="alarm-meta">{a.camera} · {a.site}</div>
                 </div>
-                <div className="alarm-time">{format(a.time, 'HH:mm')}</div>
+                <div className="alarm-time">{format(new Date(a.time), 'HH:mm')}</div>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* SITE HEALTH */}
       <div className="panel">
         <div className="panel-header">
-          <span className="panel-title">Site Status</span>
-          <span className="text3 mono" style={{ fontSize: 11 }}>4 lokationer</span>
+          <span className="panel-title">Kamera Status</span>
+          <span className="text3 mono" style={{ fontSize: 11 }}>{cameras.length} kameraer</span>
         </div>
         <table className="data-table">
           <thead>
             <tr>
-              <th>LOKATION</th>
-              <th>KAMERAER</th>
-              <th>UPTIME</th>
-              <th>AKTIVE ALARMER</th>
+              <th>NAVN</th>
+              <th>SITE</th>
+              <th>OPLØSNING</th>
+              <th>OPTAGELSE</th>
               <th>STATUS</th>
             </tr>
           </thead>
           <tbody>
-            {sites.map(s => (
-              <tr key={s.site}>
-                <td style={{ fontWeight: 500 }}>{s.site}</td>
+            {loading && (
+              <tr><td colSpan={5} style={{ color: 'var(--text3)', padding: 20 }}>Henter kameraer...</td></tr>
+            )}
+            {!loading && cameras.slice(0, 10).map(c => (
+              <tr key={c.id}>
+                <td style={{ fontWeight: 500 }}>{c.name}</td>
+                <td className="text2">{c.site}</td>
+                <td className="mono text2" style={{ fontSize: 12 }}>{c.resolution}</td>
                 <td>
-                  <span className="green">{s.online}</span>
-                  <span className="text3"> / {s.cameras}</span>
+                  {c.recording
+                    ? <span className="green" style={{ fontSize: 12 }}>Aktiv</span>
+                    : <span className="text3" style={{ fontSize: 12 }}>Inaktiv</span>}
                 </td>
                 <td>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div className="uptime-bar" style={{ width: 60 }}>
-                      <div className="uptime-fill" style={{
-                        width: `${s.online / s.cameras * 100}%`,
-                        background: s.online === s.cameras ? 'var(--green)' : 'var(--amber)'
-                      }} />
-                    </div>
-                    <span className="mono">{Math.round(s.online / s.cameras * 100)}%</span>
-                  </div>
-                </td>
-                <td>
-                  {s.alarms > 0
-                    ? <span className="red mono">{s.alarms}</span>
-                    : <span className="text3 mono">—</span>}
-                </td>
-                <td>
-                  <span className={`badge badge-${s.online === s.cameras ? 'online' : s.alarms > 3 ? 'offline' : 'warning'}`}>
-                    {s.online === s.cameras ? 'OK' : s.alarms > 3 ? 'Kritisk' : 'Advarsel'}
-                  </span>
+                  <span className={`badge badge-${c.status}`}>{c.status}</span>
                 </td>
               </tr>
             ))}
