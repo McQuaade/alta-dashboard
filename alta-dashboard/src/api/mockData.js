@@ -94,4 +94,4 @@ export function generateAlarms() {
 export function generateSystemStats() {
   return {
     cameras: { total:15, online:12, warning:1, offline:2 },
-    alarms: { today:23, unacknowledged:4
+    alarms: { today:23, unacknowledged:4}
