@@ -5,7 +5,7 @@ export default function Sidebar({ active, onNav }) {
   const navItems = [
     { id: 'overview', label: 'Overblik', icon: GridIcon },
     { id: 'cameras', label: 'Kameraer', icon: CamIcon },
-    { id: 'alarms', label: 'Alarmer', icon: BellIcon, badge: null },
+    { id: 'alarms', label: 'Alarmer', icon: BellIcon },
     { id: 'analytics', label: 'Analytics', icon: ChartIcon },
     { id: 'live', label: 'Event Feed', icon: PlayIcon },
   ]
@@ -18,7 +18,7 @@ export default function Sidebar({ active, onNav }) {
             <svg viewBox="0 0 16 16"><path d="M8 1L14 4.5V11.5L8 15L2 11.5V4.5L8 1Z"/></svg>
           </div>
           <div>
-            <div>ALTA</div>
+            <div>MADS QUAADE</div>
             <div className="logo-sub">SECURITY DASHBOARD</div>
           </div>
         </div>
@@ -34,7 +34,6 @@ export default function Sidebar({ active, onNav }) {
           >
             <item.icon />
             {item.label}
-            {item.badge && <span className="nav-badge">{item.badge}</span>}
           </button>
         ))}
 
@@ -55,6 +54,9 @@ export default function Sidebar({ active, onNav }) {
           <span>Forbundet · {timeStr}</span>
         </div>
         <div className="conn-server">elsec.eu4.alta.avigilon.com</div>
+        <div style={{ marginTop: 8, fontSize: 10, color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>
+          © Mads Quaade
+        </div>
       </div>
     </aside>
   )
