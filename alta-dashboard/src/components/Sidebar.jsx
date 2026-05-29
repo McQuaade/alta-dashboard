@@ -5,9 +5,9 @@ export default function Sidebar({ active, onNav }) {
   const navItems = [
     { id: 'overview', label: 'Overblik', icon: GridIcon },
     { id: 'cameras', label: 'Kameraer', icon: CamIcon },
-    { id: 'alarms', label: 'Alarmer', icon: BellIcon, badge: 4 },
+    { id: 'alarms', label: 'Alarmer', icon: BellIcon, badge: null },
     { id: 'analytics', label: 'Analytics', icon: ChartIcon },
-    { id: 'live', label: 'Live Feed', icon: PlayIcon },
+    { id: 'live', label: 'Event Feed', icon: PlayIcon },
   ]
 
   return (
@@ -54,7 +54,7 @@ export default function Sidebar({ active, onNav }) {
           <span className="conn-dot" />
           <span>Forbundet · {timeStr}</span>
         </div>
-        <div className="conn-server">alta.eu1.aware.avasecurity.com</div>
+        <div className="conn-server">elsec.eu4.alta.avigilon.com</div>
       </div>
     </aside>
   )
