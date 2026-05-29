@@ -1,1 +1,1 @@
-{"buildCommand":"npm run build","outputDirectory":"dist","installCommand":"npm install"} 
+{"rootDirectory":"alta-dashboard"} 
